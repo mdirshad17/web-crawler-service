@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+redis
+aiohttp
+beautifulsoup4
+motor
+pydantic
+pydantic-settings

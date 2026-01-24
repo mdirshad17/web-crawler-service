@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:alpine
+    container_name: crawler_redis
+
+  api:
+    build: .
+    env_file: .env  # This automatically loads all variables from .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    restart: always
+
+  worker:
+    build: .
+    env_file: .env
+    depends_on:
+      - redis
+    command: python worker.py
+    restart: always
+
+  nginx:
+      image: nginx:latest
+      ports:
+        - "80:80"
+        - "443:443"
+      volumes:
+        - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      depends_on:
+        - api
+
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt:rw
+      - ./certbot/www:/var/www/certbot:rw
+    # This command checks for renewal every 12 hours
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: always
+    command: tunnel --no-autoupdate run --token eyJhIjoiNjdjMmE3MmUxZDFiYWYyMmEwYTVjODIwOGZmMDY4NzciLCJ0IjoiMmE2ZjE2MDAtZWYyMy00NzUzLTliNTEtZmY4MmNhMDMyMDVmIiwicyI6IlpUSXdZbUUzTTJJdE5qUmlNaTAwWVRWbExXRmxaV1l0T1RFNE9EazVPVEJqWWpVNSJ9
+    depends_on:
+      - nginx
+volumes:
+  mongo_data:
+

@@ -16,16 +16,18 @@ def get_mongo_url():
     user = os.getenv("MONGO_USER")
     password = os.getenv("MONGO_PASS")
     host = os.getenv("MONGO_HOST")
+    db_name = os.getenv("MONGO_DB", "crawler_db")
 
     # If using Atlas (Cloud), we use the srv protocol
     if "mongodb.net" in host:
-        return f"mongodb+srv://{user}:{password}@{host}/?retryWrites=true&w=majority"
+        return f"mongodb+srv://{user}:{password}@{host}/{db_name}?retryWrites=true&w=majority"
 
     # Fallback for local Docker
-    return f"mongodb://{user}:{password}@{host}:27017/?authSource=admin"
+    return f"mongodb://{user}:{password}@{host}:27017/{db_name}?authSource=admin"
 
 
 mongo_client = AsyncIOMotorClient(get_mongo_url())
+
 
 redis_client = redis.Redis(
     host=REDIS_HOST,
